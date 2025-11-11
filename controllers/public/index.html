@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>记一笔 - Web记账APP</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="css/main.css">
+    <meta name="description" content="一款面向个人及小型团队的轻量化Web APP记账工具">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="container">
+                <a href="#" class="navbar-brand">记一笔</a>
+                <div id="sync-status"></div>
+                <div id="auth-links">
+                    <a href="#login">登录</a>
+                    <a href="#register">注册</a>
+                </div>
+                <div id="user-nav" class="hidden">
+                    <a href="#admin/dashboard" id="admin-link" class="hidden">管理后台</a>
+                    <a href="#profile" id="user-info"></a>
+                    <a href="#logout" id="logout-link">退出</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <div id="app" class="container"></div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 记一笔. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Chart.js from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <!-- Main App Logic -->
+    <script type="module" src="js/main.js"></script>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmation-modal" class="modal-overlay hidden">
+        <div class="modal-dialog">
+            <h3 id="modal-title" data-i18n="confirm_title"></h3>
+            <p id="modal-message"></p>
+            <div class="modal-actions">
+                <button id="modal-cancel-btn" class="btn btn-secondary" data-i18n="cancel_button"></button>
+                <button id="modal-confirm-btn" class="btn" data-i18n="confirm_button"></button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+    <div id="loader" class="hidden">
+        <div class="spinner"></div>
+    </div>
+</body>
+</html>

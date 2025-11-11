@@ -1,0 +1,21 @@
+{
+  "name": "Jiyi Bì - Your Bookkeeping App",
+  "short_name": "Jiyi Bì",
+  "description": "A simple and effective web-based bookkeeping application.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4CAF50",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/icons/icon-512x512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
