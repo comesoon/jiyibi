@@ -1,6 +1,6 @@
-# 记一笔App (Jiyibi App)
+# 记一笔APP (Jiyibi APP)
 
-[English README](README.md)
+[English](README.md)
 
 一款基于Web的个人及小型团队记账应用。该应用提供了一种高效便捷的方式来记录、管理和分析财务交易，支持多语言和响应式设计。
 
@@ -29,7 +29,7 @@
 
 1. 克隆仓库：
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/comesoon/jiyibi.git
    ```
 
 2. 安装依赖：

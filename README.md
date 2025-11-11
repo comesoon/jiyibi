@@ -1,6 +1,6 @@
-# Jiyibi App
+# Jiyibi APP
 
-[中文版README](README.zh.md)
+[中文版](README.zh.md)
 
 A web-based bookkeeping application for personal and small team financial management. This application provides an efficient and convenient way to record, manage, and analyze financial transactions with multi-language support and responsive design.
 
@@ -29,7 +29,7 @@ A web-based bookkeeping application for personal and small team financial manage
 
 1. Clone the repository:
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/comesoon/jiyibi.git
    ```
 
 2. Install dependencies:
