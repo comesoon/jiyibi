@@ -75,6 +75,62 @@ sudo systemctl status mongod
 ```
 如果服务正在运行，您应该会看到 "active (running)" 的状态。
 
+**1.6 配置 MongoDB 安全认证 (重要)**
+
+默认安装的 MongoDB 没有开启权限认证，任何人都可以在服务器上直接访问数据库。为了安全，我们需要为应用创建一个专用的数据库用户，并开启权限认证。
+
+**1. 进入 Mongo Shell**
+```bash
+mongosh
+```
+
+**2. 创建数据库用户**
+进入 shell 后，执行以下命令。请将 `your_app_password` 替换为您自己的高强度密码。
+
+```javascript
+// 切换到你的应用数据库（如果不存在，会自动创建）
+use jiyibi;
+
+// 创建一个只对 jiyibi 数据库有读写权限的用户
+db.createUser({
+  user: "jiyibi_user",
+  pwd: "your_app_password",  // <--- 在这里替换为你的安全密码
+  roles: [
+    { role: "readWrite", db: "jiyibi" }
+  ]
+});
+
+// 退出 shell
+exit;
+```
+
+**3. 启用访问控制**
+现在我们需要编辑 MongoDB 的配置文件来强制执行用户认证。
+
+```bash
+sudo nano /etc/mongod.conf
+```
+
+找到 `#security:` 这一行（或者如果不存在就添加它），修改为如下内容：
+
+```yaml
+# ... 其他配置 ...
+
+security:
+  authorization: "enabled"
+
+# ... 其他配置 ...
+```
+*注意：`mongod.conf` 是 YAML 格式，请注意缩进。`security:` 在行首，`authorization:` 前有两个空格。*
+
+**4. 重启 MongoDB 服务**
+保存并关闭文件后，重启 MongoDB 使配置生效。
+
+```bash
+sudo systemctl restart mongod
+```
+现在，数据库已受密码保护。
+
 ---
 
 ### 2. 部署代码
@@ -108,12 +164,15 @@ cd /var/www/jiyibi-app
 nano .env
 ```
 
+> **Nano 编辑器提示:** 按 `Ctrl + O` 然后按 `Enter` 键来保存文件，按 `Ctrl + X` 退出。
+
 将以下内容复制到 `.env` 文件中，并替换为您自己的配置：
 
 ```ini
 # MongoDB 连接字符串
 # 格式: mongodb://[username:password@]host1[:port1]/database
-MONGO_URI=mongodb://localhost:27017/jiyibi
+# 请务必使用您在 1.6 节中为 jiyibi_user 设置的密码替换 "your_app_password"
+MONGO_URI=mongodb://jiyibi_user:your_app_password@localhost:27017/jiyibi
 
 # Node.js 服务器运行的端口
 PORT=5000
@@ -124,7 +183,13 @@ JWT_SECRET=your_super_long_and_random_jwt_secret
 # 前端应用的公开访问URL (用于CORS配置)
 FRONTEND_URL=http://your_domain.com
 ```
-**重要提示**: `JWT_SECRET` 应该是一个非常复杂且无法被猜到的长字符串，您可以使用在线密码生成器来创建一个。
+**重要提示**: `JWT_SECRET` 应该是一个长、随机且无法预测的高强度密钥。为了安全，强烈建议在您自己的服务器上生成它，而不是使用在线工具。
+
+您可以使用 `openssl` 命令来生成一个符合要求的密钥：
+```bash
+openssl rand -base64 32
+```
+执行该命令会生成一个随机字符串，将其复制并粘贴到 `JWT_SECRET=` 后面即可。
 
 ---
 
@@ -139,6 +204,8 @@ cd /var/www/jiyibi-app
 # --name "jiyibi-api" 是给这个进程起一个名字，方便管理
 pm2 start npm --name "jiyibi-api" -- run start
 ```
+
+> **重要提示:** 如果您在应用启动后修改了 `.env` 配置文件（例如更新了数据库密码），您必须重启应用才能使新配置生效。重启命令为： `pm2 restart jiyibi-api`
 
 **常用PM2命令:**
 - `pm2 list`: 查看所有正在运行的应用
@@ -241,3 +308,67 @@ sudo ufw status
 ---
 
 部署完成！现在您的应用应该可以通过 `https://your_domain.com` 安全地访问了。
+
+---
+
+### 8. 项目初始化使用说明
+
+由于项目采用邀请码机制注册，且管理员账户需要手动设置，因此在首次部署后，您需要按以下步骤创建第一个管理员账户。
+
+#### 步骤 1: 手动创建第一个邀请码
+
+在没有任何用户的情况下，无法通过 API 生成邀请码。您需要直接在数据库中创建第一个。
+
+1.  **连接到 MongoDB Shell:**
+    ```bash
+    mongosh
+    ```
+
+2.  **执行以下命令创建一个邀请码:**
+    ```javascript
+    // 切换到您的数据库
+    use jiyibi;
+
+    // 插入一个邀请码文档
+    db.invitationcodes.insertOne({
+      code: "ADMIN-SETUP-CODE", // 您可以自定义这个初始邀请码
+      usesLeft: 1,              // 仅供首次注册使用
+      createdBy: null,
+      createdAt: new Date(),
+      usedBy: []
+    });
+    ```
+
+#### 步骤 2: 注册您的第一个账户
+
+1.  **访问应用:** 打开您的网站 `https://your_domain.com`。
+2.  **注册:** 点击注册按钮，使用您的邮箱和密码，并在邀请码字段中填入您刚刚创建的 `ADMIN-SETUP-CODE`。
+3.  完成注册后，您的账户现在是一个普通用户。
+
+#### 步骤 3: 将您的账户提升为管理员
+
+1.  **再次连接到 MongoDB Shell:**
+    ```bash
+    mongosh
+    ```
+
+2.  **执行以下命令更新用户角色:**
+    ```javascript
+    // 切换到您的数据库
+    use jiyibi;
+
+    // 将您刚刚注册的用户角色更新为 'isacc' (管理员)
+    // 请将 "your_registered_email@example.com" 替换为您注册时使用的邮箱
+    db.users.updateOne(
+      { "email": "your_registered_email@example.com" },
+      { $set: { "role": "isacc" } }
+    );
+    ```
+
+3.  **验证 (可选):**
+    ```javascript
+    db.users.findOne({ "email": "your_registered_email@example.com" });
+    ```
+    确认 `role` 字段已变为 `isacc`。
+
+完成以上步骤后，请重新登录您的账户。该账户现在拥有管理员权限，可以通过 API (`POST /api/invitation-codes`) 或应用界面（如果已实现）为其他用户生成新的邀请码。

@@ -43,7 +43,7 @@ export function renderLoginForm(container) {
         const password = document.getElementById('password').value;
         try {
             const result = await API.login(email, password);
-            Auth.login(result.token, { email: result.email, nickname: result.nickname });
+            Auth.login(result.token, { email: result.email, nickname: result.nickname, role: result.role });
             window.location.hash = '#dashboard';
             window.location.reload();
         } catch (error) {

@@ -34,7 +34,8 @@ async function router() {
     const queryParams = new URLSearchParams(queryString);
     
     const [base, id] = path.split('/');
-    const baseRoute = id ? base : path; // Use the full path if no ID
+    // For admin routes like #admin/dashboard, baseRoute should be '#admin/dashboard', not just '#admin'
+    const baseRoute = path.startsWith('#admin/') ? path : (id ? base : path);
 
     // Route Protection
     if (!['#login', '#register'].includes(baseRoute)) {

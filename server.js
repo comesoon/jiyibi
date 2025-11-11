@@ -34,10 +34,15 @@ const connectDB = async () => {
         console.log('MongoDB Connected...');
     } catch (err) {
         console.error(err.message);
-        process.exit(1);
+        // process.exit(1); // Commented out to allow for more resilient connection attempts
     }
 };
-connectDB();
+
+// Add a delay before attempting to connect to MongoDB
+console.log('Waiting for MongoDB to be ready...');
+setTimeout(() => {
+    connectDB();
+}, 5000); // Wait for 5 seconds
 
 // --- API Routes ---
 const authRoutes = require('./routes/auth');
