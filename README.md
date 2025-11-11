@@ -105,7 +105,7 @@ The frontend is located in the `public/` directory and includes:
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE]([comesoon/jiyibi](https://github.com/comesoon/jiyibi?tab=MIT-1-ov-file)) file for details.
 
 ## Acknowledgments
 

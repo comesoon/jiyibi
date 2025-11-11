@@ -105,7 +105,7 @@ jiyibi-app/
 
 ## 许可证
 
-该项目采用MIT许可证 - 详情请见 [LICENSE](LICENSE) 文件。
+该项目采用MIT许可证 - 详情请见 [LICENSE]([comesoon/jiyibi](https://github.com/comesoon/jiyibi?tab=MIT-1-ov-file)) 文件。
 
 ## 鸣谢
 
