@@ -2,6 +2,7 @@ import { getStore } from './db.js';
 import { showLoader, hideLoader } from './loader.js';
 import { showToast } from './toast.js';
 import * as store from './store.js';
+import { t } from './i18n.js';
 
 // A simplified API that temporarily disables offline support to fix the DB bug.
 
@@ -31,7 +32,7 @@ async function networkRequest(url, options = {}, expectJson = true) {
         
         return response.json();
     } catch (error) {
-        showToast(error.message, 'error');
+        showToast(t(error.message), 'error');
         throw error;
     } finally {
         hideLoader();

@@ -81,9 +81,11 @@ export function renderRegisterForm(container) {
         const password = document.getElementById('password').value;
         const invitationCode = document.getElementById('invitationCode').value;
         try {
-            await API.register(email, password, invitationCode);
+            const result = await API.register(email, password, invitationCode);
+            Auth.login(result.token, { email: result.email, nickname: result.nickname, role: result.role });
             showToast(t('registration_successful'), 'success');
-            window.location.hash = '#login';
+            window.location.hash = '#dashboard';
+            window.location.reload();
         } catch (error) {
             // Error is already shown by networkRequest
         }
@@ -92,7 +94,7 @@ export function renderRegisterForm(container) {
 
 // --- Dashboard ---
 export function renderDashboard(container, data) {
-    const { ledgers = [], transactions = [] } = data;
+    const { ledgers = [], transactions = [], selectedLedgerId } = data;
     const user = Auth.getUser();
     const title = user && user.nickname ? `${user.nickname}的仪表盘` : t('dashboard');
 
@@ -110,6 +112,24 @@ export function renderDashboard(container, data) {
     titleEl.tabIndex = -1;
     dashboardEl.appendChild(titleEl);
 
+    // Ledger Selector and Display
+    const currentLedger = selectedLedgerId 
+        ? ledgers.find(l => l._id === selectedLedgerId) 
+        : null;
+    const currentLedgerName = currentLedger ? currentLedger.name : t('all_ledgers');
+
+    const ledgerSelectorHtml = `
+        <div class="dashboard-controls">
+            <label for="ledger-selector" class="sr-only">${t('select_ledger')}</label>
+            <select id="ledger-selector" class="form-control">
+                <option value="all" ${!selectedLedgerId ? 'selected' : ''}>${t('all_ledgers')}</option>
+                ${ledgers.map(l => `<option value="${l._id}" ${selectedLedgerId === l._id ? 'selected' : ''}>${l.name}</option>`).join('')}
+            </select>
+            <span class="current-ledger-display">${t('current_ledger')}: <strong>${currentLedgerName}</strong></span>
+        </div>
+    `;
+    dashboardEl.insertAdjacentHTML('beforeend', ledgerSelectorHtml);
+
     const actionsEl = document.createElement('div');
     actionsEl.className = 'actions dashboard-actions';
     actionsEl.innerHTML = `
@@ -123,7 +143,7 @@ export function renderDashboard(container, data) {
     summaryEl.className = 'dashboard-summary';
     summaryEl.appendChild(createStatCard({ title: 'total_income', amount: totalIncome, type: 'text-income' }));
     summaryEl.appendChild(createStatCard({ title: 'total_expense', amount: Math.abs(totalExpense), type: 'text-expense' }));
-    summaryEl.appendChild(createStatCard({ title: 'net_income', amount: totalIncome - totalExpense }));
+    summaryEl.appendChild(createStatCard({ title: 'net_income', amount: totalIncome + totalExpense }));
     const ledgerCard = createStatCard({ title: 'ledger_count', amount: ledgers.length });
     ledgerCard.querySelector('.amount').textContent = ledgers.length; // Remove currency formatting
     summaryEl.appendChild(ledgerCard);
@@ -146,6 +166,18 @@ export function renderDashboard(container, data) {
     dashboardEl.appendChild(quickAccessCard);
 
     render(container, dashboardEl);
+
+    // Add event listener for ledger selector
+    document.getElementById('ledger-selector').addEventListener('change', (e) => {
+        const newLedgerId = e.target.value === 'all' ? '' : e.target.value;
+        if (newLedgerId) {
+            localStorage.setItem('selectedLedgerId', newLedgerId);
+            window.location.hash = `#dashboard?ledgerId=${newLedgerId}`;
+        } else {
+            localStorage.removeItem('selectedLedgerId');
+            window.location.hash = `#dashboard`;
+        }
+    });
 }
 
 // --- Ledger Views ---
@@ -274,21 +306,27 @@ async function handleDeleteLedger(id) {
 }
 
 export async function renderTransactionList(container, data) {
-    const { queryParams } = data;
+    const { queryParams, ledgers = [], selectedLedgerId } = data;
     const initialCategoryId = queryParams.get('categoryId');
 
-    // Fetch initial data based on query params
-    const initialParams = Object.fromEntries(queryParams.entries());
-    let currentTransactions = await API.getTransactions(initialParams);
+    // This function is now re-entrant and complex.
+    // It fetches its own data but also receives data. Let's streamline.
     const categories = await API.getCategories();
+    let currentTransactions = data.transactions || [];
 
     const page = document.createElement('div');
     
     const renderPage = () => {
         const categoryOptions = categories.map(c => {
             const selected = c._id === initialCategoryId ? 'selected' : '';
-            return `<option value="${c._id}" ${selected}>${c.name}</option>`;
+            const key = `category_${c.name.toLowerCase().replace(/\s+/g, '_')}`;
+            const translatedName = t(key);
+            return `<option value="${c._id}" ${selected}>${translatedName}</option>`;
         }).join('');
+
+        const ledgerSelectorOptions = ledgers.map(l => 
+            `<option value="${l._id}" ${selectedLedgerId === l._id ? 'selected' : ''}>${l.name}</option>`
+        ).join('');
 
         page.innerHTML = `
             <div class="page-header">
@@ -298,6 +336,13 @@ export async function renderTransactionList(container, data) {
                     <a href="#dashboard" class="btn btn-secondary">${t('dashboard')}</a>
                 </div>
             </div>
+            <div class="dashboard-controls">
+                <label for="ledger-selector-trans" class="sr-only">${t('select_ledger')}</label>
+                <select id="ledger-selector-trans" class="form-control">
+                    <option value="all" ${!selectedLedgerId ? 'selected' : ''}>${t('all_ledgers')}</option>
+                    ${ledgerSelectorOptions}
+                </select>
+            </div>
             <div class="filter-bar">
                 <form id="filter-form">
                     <div class="form-group">
@@ -305,7 +350,7 @@ export async function renderTransactionList(container, data) {
                         <input type="text" id="description-search" placeholder="${t('coffee_shopping_etc')}" value="${queryParams.get('description') || ''}">
                     </div>
                     <div class="form-group">
-                        <label for="type-filter">${t('type')}</label>
+                        <label for="type-filter">${t('transaction_type_filter')}</label>
                         <select id="type-filter">
                             <option value="" ${!queryParams.get('type') ? 'selected' : ''}>${t('all')}</option>
                             <option value="income" ${queryParams.get('type') === 'income' ? 'selected' : ''}>${t('income')}</option>
@@ -313,7 +358,7 @@ export async function renderTransactionList(container, data) {
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="category-filter">${t('categories')}</label>
+                        <label for="category-filter">${t('transaction_category_filter')}</label>
                         <select id="category-filter">
                             <option value="">${t('all')}</option>
                             ${categoryOptions}
@@ -372,9 +417,27 @@ export async function renderTransactionList(container, data) {
         render(container, page);
 
         // Add event listeners after rendering
+        document.getElementById('ledger-selector-trans').addEventListener('change', handleLedgerChange);
         document.getElementById('filter-form').addEventListener('submit', handleFilterSubmit);
         document.getElementById('clear-filters').addEventListener('click', handleClearFilters);
         document.getElementById('export-xlsx').addEventListener('click', handleExport);
+    };
+
+    const handleLedgerChange = (e) => {
+        const newLedgerId = e.target.value === 'all' ? '' : e.target.value;
+        if (newLedgerId) {
+            localStorage.setItem('selectedLedgerId', newLedgerId);
+        } else {
+            localStorage.removeItem('selectedLedgerId');
+        }
+        
+        // Re-trigger the router by setting the hash, preserving other filters
+        const queryParams = new URLSearchParams(window.location.hash.split('?')[1] || '');
+        // We don't need to set ledgerId in the params, as the router reads it from localStorage
+        // But we need to ensure the hash changes to trigger the event listener
+        queryParams.set('_t', Date.now()); // Dummy param to force hashchange
+        
+        window.location.hash = `#transactions?${queryParams.toString()}`;
     };
 
     const handleFilterSubmit = async (e) => {
@@ -395,16 +458,11 @@ export async function renderTransactionList(container, data) {
         
         // Update URL for bookmarking
         const newQueryString = new URLSearchParams(params).toString();
-        history.pushState(null, '', `#/transactions?${newQueryString}`);
-
-        currentTransactions = await API.getTransactions(params);
-        renderPage(); // Re-render the whole view with new data
+        window.location.hash = `#/transactions?${newQueryString}`;
     };
 
     const handleClearFilters = async () => {
-        history.pushState(null, '', '#/transactions');
-        currentTransactions = await API.getTransactions(); // Fetch all transactions
-        renderPage();
+        window.location.hash = '#/transactions';
     };
 
     const handleExport = () => {
@@ -416,6 +474,12 @@ export async function renderTransactionList(container, data) {
             endDate: document.getElementById('end-date').value,
             format: 'xlsx'
         };
+        // Add ledgerId to export params if it's selected
+        const ledgerId = localStorage.getItem('selectedLedgerId');
+        if (ledgerId) {
+            params.ledgerId = ledgerId;
+        }
+
         Object.keys(params).forEach(key => {
             if (!params[key]) {
                 delete params[key];
@@ -715,6 +779,13 @@ function processTrendData(transactions, granularity) {
 }
 
 export function renderChartView(container, data) {
+    const { ledgers = [], transactions = [], categories = [], selectedLedgerId } = data;
+
+    const currentLedger = selectedLedgerId 
+        ? ledgers.find(l => l._id === selectedLedgerId) 
+        : null;
+    const currentLedgerName = currentLedger ? currentLedger.name : t('all_ledgers');
+
     const html = `
         <div>
             <div class="page-header">
@@ -722,6 +793,9 @@ export function renderChartView(container, data) {
                  <div class="page-actions">
                     <a href="#dashboard" class="btn btn-secondary">${t('dashboard')}</a>
                 </div>
+            </div>
+            <div class="chart-ledger-display">
+                <span>${t('current_ledger')}: <strong>${currentLedgerName}</strong></span>
             </div>
             <div class="chart-controls">
                 <select id="chart-type">
@@ -755,13 +829,13 @@ export function renderChartView(container, data) {
         granularityControls.style.display = (chartType === 'trend' || chartType === 'bar') ? 'flex' : 'none';
 
         if (chartType === 'trend') {
-            const chartData = processTrendData(data.transactions, currentGranularity);
+            const chartData = processTrendData(transactions, currentGranularity);
             Chart.createTrendChart(ctx, chartData);
         } else if (chartType === 'bar') {
-            const chartData = processTrendData(data.transactions, currentGranularity);
+            const chartData = processTrendData(transactions, currentGranularity);
             Chart.createBarChart(ctx, chartData);
         } else if (chartType === 'pie') {
-            const chartData = processPieData(data.transactions, data.categories);
+            const chartData = processPieData(transactions);
             Chart.createPieChart(ctx, chartData);
         }
     };
@@ -782,28 +856,30 @@ export function renderChartView(container, data) {
     drawChart();
 }
 
-function processPieData(transactions, categories) {
+function processPieData(transactions) {
     const expenseByCategory = {};
-    const categoryMap = (categories || []).reduce((map, cat) => {
-        map[cat._id] = { name: cat.name, id: cat._id };
-        return map;
-    }, {});
 
     (transactions || []).forEach(t => {
-        if (t.type === 'expense') {
-            const categoryInfo = categoryMap[t.category] || { name: 'Uncategorized', id: null };
-            if (!expenseByCategory[categoryInfo.name]) {
-                expenseByCategory[categoryInfo.name] = { total: 0, categoryId: categoryInfo.id };
+        if (t.type === 'expense' && t.category) {
+            const categoryName = t.category.name || 'Uncategorized';
+            const categoryId = t.category._id;
+
+            if (!expenseByCategory[categoryName]) {
+                expenseByCategory[categoryName] = { total: 0, categoryId: categoryId };
             }
-            expenseByCategory[categoryInfo.name].total += Math.abs(t.amount);
+            expenseByCategory[categoryName].total += Math.abs(t.amount);
         }
     });
 
     const labels = Object.keys(expenseByCategory);
+    const translatedLabels = labels.map(label => {
+        const key = `category_${label.toLowerCase().replace(/\s+/g, '_')}`;
+        return t(key);
+    });
     const values = labels.map(label => expenseByCategory[label].total);
     const categoryIds = labels.map(label => expenseByCategory[label].categoryId);
     
-    return { labels, values, categoryIds };
+    return { labels: translatedLabels, values, categoryIds };
 }
 
 export async function renderProfilePage(container) {
@@ -894,7 +970,6 @@ export async function renderProfilePage(container) {
 
             showToast(t('profile_updated_successfully'), 'success');
             window.location.hash = '#dashboard';
-            window.location.reload(); // Reload to apply all changes
         } catch (error) {
             // Error is already shown by networkRequest
         }

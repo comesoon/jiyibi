@@ -64,17 +64,45 @@ async function router() {
     let data = { queryParams }; // Pass query params to the view
     try {
         if (baseRoute === '#dashboard') {
-            data.ledgers = await API.getLedgers();
-            data.transactions = await API.getTransactions();
+            const allLedgers = await API.getLedgers();
+            data.ledgers = allLedgers;
+
+            // Determine selected ledger
+            let selectedLedgerId = queryParams.get('ledgerId') || localStorage.getItem('selectedLedgerId');
+            // Ensure selectedLedgerId is valid or reset if not found in current ledgers
+            if (selectedLedgerId && !allLedgers.some(l => l._id === selectedLedgerId)) {
+                selectedLedgerId = null; // Reset if invalid
+                localStorage.removeItem('selectedLedgerId');
+            }
+            data.selectedLedgerId = selectedLedgerId;
+
+            const transactionParams = selectedLedgerId ? { ledgerId: selectedLedgerId } : {};
+            data.transactions = await API.getTransactions(transactionParams);
         } else if (baseRoute === '#ledgers') {
             data.ledgers = await API.getLedgers();
         } else if (baseRoute === '#transactions') {
+            const allLedgers = await API.getLedgers();
+            data.ledgers = allLedgers;
+
+            const selectedLedgerId = localStorage.getItem('selectedLedgerId');
+            data.selectedLedgerId = selectedLedgerId;
+
             const apiParams = Object.fromEntries(queryParams.entries());
+            if (selectedLedgerId) {
+                apiParams.ledgerId = selectedLedgerId;
+            }
             data.transactions = await API.getTransactions(apiParams);
         } else if (baseRoute === '#categories') {
             data.categories = await API.getCategories();
         } else if (baseRoute === '#charts') {
-            data.transactions = await API.getTransactions();
+            const allLedgers = await API.getLedgers();
+            data.ledgers = allLedgers;
+
+            const selectedLedgerId = localStorage.getItem('selectedLedgerId');
+            data.selectedLedgerId = selectedLedgerId;
+
+            const transactionParams = selectedLedgerId ? { ledgerId: selectedLedgerId } : {};
+            data.transactions = await API.getTransactions(transactionParams);
             data.categories = await API.getCategories();
         } else if (baseRoute === '#admin/invitations') {
             data.invitationCodes = await API.getInvitationCodes();
@@ -152,7 +180,7 @@ function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('/sw.js').then(registration => {
-                console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                // console.log('ServiceWorker registration successful with scope: ', registration.scope);
             }, err => {
                 console.log('ServiceWorker registration failed: ', err);
             });

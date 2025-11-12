@@ -18,26 +18,26 @@ const registerUser = async (req, res) => {
     try {
         // 1. Validate Invitation Code
         if (!invitationCode) {
-            return res.status(400).json({ message: 'Invitation code is required' });
+            return res.status(400).json({ message: 'invitation_code_required' });
         }
 
         const code = await InvitationCode.findOne({ code: invitationCode });
 
         if (!code) {
-            return res.status(400).json({ message: 'Invalid invitation code' });
+            return res.status(400).json({ message: 'invalid_invitation_code' });
         }
         if (code.usesLeft <= 0) {
-            return res.status(400).json({ message: 'Invitation code has no uses left' });
+            return res.status(400).json({ message: 'invitation_code_no_uses_left' });
         }
         if (code.expiresAt && code.expiresAt < new Date()) {
-            return res.status(400).json({ message: 'Invitation code has expired' });
+            return res.status(400).json({ message: 'invitation_code_expired' });
         }
 
         // 2. Check if user already exists
         const userExists = await User.findOne({ email });
 
         if (userExists) {
-            return res.status(400).json({ message: 'User already exists' });
+            return res.status(400).json({ message: 'user_already_exists' });
         }
 
         // 3. Create user
@@ -82,7 +82,7 @@ const loginUser = async (req, res) => {
                                 role: user.role, // Add this line
                                 token: generateToken(user._id),
                             });        } else {
-            res.status(401).json({ message: 'Invalid email or password' });
+            res.status(401).json({ message: 'invalid_email_or_password' });
         }
     } catch (error) {
         res.status(500).json({ message: error.message });
