@@ -328,7 +328,7 @@ sudo ufw status
     ```javascript
     // 切换到您的数据库
     use jiyibi;
-
+    
     // 插入一个邀请码文档
     db.invitationcodes.insertOne({
       code: "ADMIN-SETUP-CODE", // 您可以自定义这个初始邀请码
@@ -356,7 +356,7 @@ sudo ufw status
     ```javascript
     // 切换到您的数据库
     use jiyibi;
-
+    
     // 将您刚刚注册的用户角色更新为 'isacc' (管理员)
     // 请将 "your_registered_email@example.com" 替换为您注册时使用的邮箱
     db.users.updateOne(
@@ -372,3 +372,51 @@ sudo ufw status
     确认 `role` 字段已变为 `isacc`。
 
 完成以上步骤后，请重新登录您的账户。该账户现在拥有管理员权限，可以通过 API (`POST /api/invitation-codes`) 或应用界面（如果已实现）为其他用户生成新的邀请码。
+
+---
+
+## 持续构建脚本设置步骤
+
+这是最现代化、最强大的方案，尤其适合团队协作和正规项目。当你有代码推送到特定分支（如 `main`）时，它会自动触发一系列动作（测试、构建、部署）。
+
+以 **GitHub Actions** 为例：
+
+1.  在你的项目根目录下创建 `.github/workflows/deploy.yml` 文件。
+2.  写入以下配置：
+
+    ```yaml
+    name: Deploy to Server
+    
+    on:
+      push:
+        branches:
+          - main # 当 main 分支有 push 时触发
+    
+    jobs:
+      deploy:
+        runs-on: ubuntu-latest
+    
+        steps:
+        - name: Checkout code
+          uses: actions/checkout@v3
+    
+        - name: Deploy to server
+          uses: appleboy/ssh-action@master
+          with:
+            host: ${{ secrets.SERVER_HOST }} # 服务器 IP
+            username: ${{ secrets.SERVER_USERNAME }} # 服务器用户名
+            key: ${{ secrets.SSH_PRIVATE_KEY }} # SSH 私钥
+            script: |
+              cd /path/to/your/project
+              git pull origin main
+              npm install --production
+              pm2 restart your_app_name
+    ```
+
+3.  **配置 Secrets**: 在你的 GitHub 项目页面，进入 `Settings` > `Secrets and variables` > `Actions`，添加以下三个 `secrets`：
+    *   `SERVER_HOST`: 你的服务器 IP 地址。
+    *   `SERVER_USERNAME`: 你的登录用户名。
+    *   `SSH_PRIVATE_KEY`: 用于登录服务器的 SSH 私钥。
+
+---
+
