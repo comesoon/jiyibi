@@ -42,4 +42,7 @@ const TransactionSchema = new mongoose.Schema({
     }
 });
 
+// Add a compound index for frequent queries to improve performance
+TransactionSchema.index({ user: 1, ledger: 1, date: -1 });
+
 module.exports = mongoose.model('Transaction', TransactionSchema);

@@ -252,6 +252,12 @@ server {
     location / {
         try_files $uri $uri/ /index.html;
     }
+
+    # 为静态资源设置缓存
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 7d;
+        add_header Cache-Control "public, no-transform";
+    }
 }
 ```
 

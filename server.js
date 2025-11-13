@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const mongoose = require('mongoose');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 
@@ -23,6 +24,18 @@ app.use(express.urlencoded({ extended: true }));
 
 // --- Serve Frontend Static Files ---
 app.use(express.static('public'));
+
+// --- API Rate Limiter ---
+const apiLimiter = rateLimit({
+	windowMs: 15 * 60 * 1000, // 15 minutes
+	max: 100, // Limit each IP to 100 requests per window
+	standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+	legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+
+// Apply the rate limiting middleware to API calls only
+app.use('/api', apiLimiter);
+
 
 // --- Database Connection ---
 const connectDB = async () => {
