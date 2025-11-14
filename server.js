@@ -23,7 +23,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // --- Serve Frontend Static Files ---
-app.use(express.static('public'));
+app.use(express.static('dist'));
 
 // --- API Rate Limiter ---
 const apiLimiter = rateLimit({
@@ -84,7 +84,7 @@ app.use((err, req, res, next) => {
 
 // --- Frontend Catch-all Route ---
 app.get('*', (req, res) => {
-  res.sendFile(__dirname + '/public/index.html');
+  res.sendFile(__dirname + '/dist/index.html');
 });
 
 

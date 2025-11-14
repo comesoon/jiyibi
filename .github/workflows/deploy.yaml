@@ -22,5 +22,6 @@ jobs:
         script: |
           cd /var/www/jiyibi-app
           git pull origin main
-          npm install --production
+          npm install
+          npm run build
           pm2 restart jiyibi-api
