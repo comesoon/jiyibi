@@ -381,48 +381,79 @@ sudo ufw status
 
 ---
 
-## 持续构建脚本设置步骤
+### 部署与构建流程
 
-这是最现代化、最强大的方案，尤其适合团队协作和正规项目。当你有代码推送到特定分支（如 `main`）时，它会自动触发一系列动作（测试、构建、部署）。
+本项目已集成 Vite 作为前端构建工具。这意味着在部署时，需要有一个“构建”步骤来优化和打包前端资源。
 
-以 **GitHub Actions** 为例：
+#### 1. 部署流程概述
 
-1.  在你的项目根目录下创建 `.github/workflows/deploy.yml` 文件。
-2.  写入以下配置：
+无论是自动化部署还是手动部署，核心步骤都是相同的：
 
-    ```yaml
-    name: Deploy to Server
-    
-    on:
-      push:
-        branches:
-          - main # 当 main 分支有 push 时触发
-    
-    jobs:
-      deploy:
-        runs-on: ubuntu-latest
-    
-        steps:
-        - name: Checkout code
-          uses: actions/checkout@v3
-    
-        - name: Deploy to server
-          uses: appleboy/ssh-action@master
-          with:
-            host: ${{ secrets.SERVER_HOST }} # 服务器 IP
-            username: ${{ secrets.SERVER_USERNAME }} # 服务器用户名
-            key: ${{ secrets.SSH_PRIVATE_KEY }} # SSH 私钥
-            script: |
-              cd /path/to/your/project
-              git pull origin main
-              npm install --production
-              pm2 restart your_app_name
-    ```
+1.  **拉取代码**: 从 Git 仓库获取最新的代码。
+2.  **安装依赖**: 安装项目所需的所有依赖包（包括开发依赖，因为构建需要它们）。
+3.  **执行构建**: 运行构建命令，生成用于生产环境的 `dist` 目录。
+4.  **重启服务**: 使用 PM2 等工具重启 Node.js 服务。
 
-3.  **配置 Secrets**: 在你的 GitHub 项目页面，进入 `Settings` > `Secrets and variables` > `Actions`，添加以下三个 `secrets`：
-    *   `SERVER_HOST`: 你的服务器 IP 地址。
-    *   `SERVER_USERNAME`: 你的登录用户名。
-    *   `SSH_PRIVATE_KEY`: 用于登录服务器的 SSH 私钥。
+#### 2. 自动化部署 (GitHub Actions)
 
+推荐使用此方法。当代码被推送到 `main` 分支时，GitHub Actions 会自动在您的服务器上执行上述部署流程。
+
+您项目中的 `.github/workflows/deploy.yaml` 文件已为此配置好：
+
+```yaml
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - main # 当 main 分支有 push 时触发
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Deploy to server
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.SERVER_HOST }} # 服务器 IP
+        username: ${{ secrets.SERVER_USERNAME }} # 服务器用户名
+        key: ${{ secrets.SSH_PRIVATE_KEY }} # SSH 私钥
+        script: |
+          cd /var/www/jiyibi-app
+          git pull origin main
+          npm install
+          npm run build
+          pm2 restart jiyibi-api
+```
+
+**配置 Secrets**:
+要使此工作流生效，请在您的 GitHub 项目页面，进入 `Settings` > `Secrets and variables` > `Actions`，添加以下三个 `secrets`：
+*   `SERVER_HOST`: 您的服务器 IP 地址。
+*   `SERVER_USERNAME`: 您用于登录服务器的用户名。
+*   `SSH_PRIVATE_KEY`: 用于登录服务器的 SSH 私钥。
+
+#### 3. 手动部署
+
+如果您需要手动在服务器上部署，请登录服务器并执行以下命令：
+
+```bash
+# 1. 进入项目目录
+cd /var/www/jiyibi-app
+
+# 2. 拉取最新代码
+git pull origin main
+
+# 3. 安装依赖
+npm install
+
+# 4. 执行构建
+npm run build
+
+# 5. 重启应用
+pm2 restart jiyibi-api
+```
 ---
-
