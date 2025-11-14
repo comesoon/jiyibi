@@ -676,65 +676,79 @@ export function renderCategoryList(container, data) {
     render(container, html);
 }
 
-export function renderCategoryForm(container) {
-
-    const html = `
-
-        <div class="form-container">
-
-            <h2 tabindex="-1">${t('manage_categories')}</h2>
-
-            <form id="category-form">
-
-                <div class="form-group">
-
-                    <label for="name">分类名称</label>
-
-                    <input type="text" id="name" required>
-
-                </div>
-
-                <div class="form-actions">
-
-                    <a href="#categories" class="btn btn-secondary">取消</a>
-
-                    <button type="submit" class="btn">创建</button>
-
-                </div>
-
-            </form>
-
-        </div>
-
-    `;
-
-    render(container, html);
-
-    document.getElementById('category-form').addEventListener('submit', async e => {
-
-        e.preventDefault();
-
-        const name = document.getElementById('name').value;
-
-        const type = document.getElementById('type').value;
-
-        try {
-
-            await API.createCategory({ name, type });
-
-            showToast(t('category_created_successfully'), 'success');
-
-            window.location.hash = '#categories';
-
-        } catch (error) {
-
-            // Error is already shown by networkRequest
-
-        }
-
+export function renderCategoryForm(container) {
+
+    const html = `
+
+        <div class="form-container">
+
+            <h2 tabindex="-1">${t('manage_categories')}</h2>
+
+            <form id="category-form">
+
+                <div class="form-group">
+
+                    <label for="name">分类名称</label>
+
+                    <input type="text" id="name" required>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label for="type">分类类型</label>
+
+                    <select id="type" required>
+
+                        <option value="">请选择类型</option>
+
+                        <option value="income">收入</option>
+
+                        <option value="expense">支出</option>
+
+                    </select>
+
+                </div>
+
+                <div class="form-actions">
+
+                    <a href="#categories" class="btn btn-secondary">取消</a>
+
+                    <button type="submit" class="btn">创建</button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    `;
+
+    render(container, html);
+
+    document.getElementById('category-form').addEventListener('submit', async e => {
+
+        e.preventDefault();
+
+        const name = document.getElementById('name').value;
+
+        const type = document.getElementById('type').value;
+
+        try {
+
+            await API.createCategory({ name, type });
+
+            showToast(t('category_created_successfully'), 'success');
+
+            window.location.hash = '#categories';
+
+        } catch (error) {
+
+            // Error is already shown by networkRequest
+
+        }
+
     });
-
-}
 
 function getWeekStartDate(d) {
     d = new Date(d);
