@@ -694,6 +694,14 @@ export function renderCategoryForm(container) {
 
                 </div>
 
+                <div class="form-group">
+                    <label for="type">分类类型</label>
+                    <select id="type" required>
+                        <option value="expense">${t('expense')}</option>
+                        <option value="income">${t('income')}</option>
+                    </select>
+                </div>
+
                 <div class="form-actions">
 
                     <a href="#categories" class="btn btn-secondary">取消</a>
