@@ -2,7 +2,7 @@ import { createStatCard, createListItem } from './components.js';
 import { showToast } from './toast.js';
 import * as API from './api.js';
 import * as Auth from './auth.js';
-import * as Chart from './chart.js';
+import * as ChartFunctions from './chart.js';
 import { t } from './i18n.js';
 import { customConfirm } from './modal.js';
 
@@ -861,13 +861,13 @@ export function renderChartView(container, data) {
 
         if (chartType === 'trend') {
             const chartData = processTrendData(transactions, currentGranularity);
-            Chart.createTrendChart(ctx, chartData);
+                            ChartFunctions.createTrendChart(ctx, chartData);
         } else if (chartType === 'bar') {
             const chartData = processTrendData(transactions, currentGranularity);
-            Chart.createBarChart(ctx, chartData);
+            ChartFunctions.createBarChart(ctx, chartData);
         } else if (chartType === 'pie') {
             const chartData = processPieData(transactions);
-            Chart.createPieChart(ctx, chartData);
+            ChartFunctions.createPieChart(ctx, chartData);
         }
     };
 
