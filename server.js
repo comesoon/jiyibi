@@ -45,9 +45,47 @@ const connectDB = async () => {
             useUnifiedTopology: true,
         });
         console.log('MongoDB Connected...');
+        
+        // 自动填充默认分类
+        await seedDefaultCategoriesIfEmpty();
     } catch (err) {
         console.error(err.message);
         // process.exit(1); // Commented out to allow for more resilient connection attempts
+    }
+};
+
+// Import category controller for seeding default categories
+const { seedDefaultCategories } = require('./controllers/categoryController');
+
+// Function to seed default categories if the collection is empty
+const seedDefaultCategoriesIfEmpty = async () => {
+    try {
+        const Category = require('./models/Category');
+        const count = await Category.countDocuments({ user: null });
+        
+        if (count === 0) {
+            console.log('Seeding default categories...');
+            const defaultCategories = [
+                // Income
+                { name: 'Salary', type: 'income' },
+                { name: 'Freelance', type: 'income' },
+                { name: 'Investment', type: 'income' },
+                // Expense
+                { name: 'Food', type: 'expense' },
+                { name: 'Transport', type: 'expense' },
+                { name: 'Housing', type: 'expense' },
+                { name: 'Entertainment', type: 'expense' },
+                { name: 'Health', type: 'expense' },
+                { name: 'Other', type: 'expense' },
+            ];
+            
+            await Category.insertMany(defaultCategories);
+            console.log('Default categories seeded successfully');
+        } else {
+            console.log('Default categories already exist, skipping seeding');
+        }
+    } catch (error) {
+        console.error('Error seeding default categories:', error.message);
     }
 };
 
