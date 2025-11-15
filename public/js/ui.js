@@ -726,35 +726,45 @@ export function renderCategoryForm(container) {
 
     render(container, html);
 
-    // 使用 setTimeout 确保 DOM 已经更新完成
-    setTimeout(() => {
+    // 使用 MutationObserver 确保 DOM 已经更新完成
+    const observer = new MutationObserver((mutationsList, observer) => {
         const form = document.getElementById('category-form');
         if (form) {
+            observer.disconnect(); // 停止观察
+            
             form.addEventListener('submit', async e => {
-
                 e.preventDefault();
 
-                const name = document.getElementById('name').value;
-
-                const type = document.getElementById('type').value;
-
-                try {
-
-                    await API.createCategory({ name, type });
-
-                    showToast(t('category_created_successfully'), 'success');
-
-                    window.location.hash = '#categories';
-
-                } catch (error) {
-
-                    // Error is already shown by networkRequest
-
+                const nameInput = document.getElementById('name');
+                const typeSelect = document.getElementById('type');
+                
+                // 再次检查元素是否存在
+                if (!nameInput || !typeSelect) {
+                    showToast('表单元素未找到', 'error');
+                    return;
                 }
 
+                const name = nameInput.value;
+                const type = typeSelect.value;
+
+                if (!name || !type) {
+                    showToast('请填写所有必填字段', 'error');
+                    return;
+                }
+
+                try {
+                    await API.createCategory({ name, type });
+                    showToast(t('category_created_successfully'), 'success');
+                    window.location.hash = '#categories';
+                } catch (error) {
+                    // Error is already shown by networkRequest
+                }
             });
         }
-    }, 0);
+    });
+
+    // 开始观察
+    observer.observe(document.body, { childList: true, subtree: true });
 }
 
 function getWeekStartDate(d) {

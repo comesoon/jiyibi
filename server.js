@@ -47,7 +47,7 @@ const connectDB = async () => {
         console.log('MongoDB Connected...');
         
         // 自动填充默认分类
-        await seedDefaultCategoriesIfEmpty();
+        await seedDefaultCategoriesIfMissing();
     } catch (err) {
         console.error(err.message);
         // process.exit(1); // Commented out to allow for more resilient connection attempts
@@ -57,33 +57,41 @@ const connectDB = async () => {
 // Import category controller for seeding default categories
 const { seedDefaultCategories } = require('./controllers/categoryController');
 
-// Function to seed default categories if the collection is empty
-const seedDefaultCategoriesIfEmpty = async () => {
+// Function to seed default categories if missing
+const seedDefaultCategoriesIfMissing = async () => {
     try {
         const Category = require('./models/Category');
-        const count = await Category.countDocuments({ user: null });
         
-        if (count === 0) {
-            console.log('Seeding default categories...');
-            const defaultCategories = [
-                // Income
-                { name: 'Salary', type: 'income' },
-                { name: 'Freelance', type: 'income' },
-                { name: 'Investment', type: 'income' },
-                // Expense
-                { name: 'Food', type: 'expense' },
-                { name: 'Transport', type: 'expense' },
-                { name: 'Housing', type: 'expense' },
-                { name: 'Entertainment', type: 'expense' },
-                { name: 'Health', type: 'expense' },
-                { name: 'Other', type: 'expense' },
-            ];
+        // Define default categories
+        const defaultCategories = [
+            // Income
+            { name: 'Salary', type: 'income' },
+            { name: 'Freelance', type: 'income' },
+            { name: 'Investment', type: 'income' },
+            // Expense
+            { name: 'Food', type: 'expense' },
+            { name: 'Transport', type: 'expense' },
+            { name: 'Housing', type: 'expense' },
+            { name: 'Entertainment', type: 'expense' },
+            { name: 'Health', type: 'expense' },
+            { name: 'Other', type: 'expense' },
+        ];
+        
+        // Check for each default category and add if missing
+        for (const category of defaultCategories) {
+            const existing = await Category.findOne({ 
+                name: category.name, 
+                user: null,  // Default category
+                type: category.type 
+            });
             
-            await Category.insertMany(defaultCategories);
-            console.log('Default categories seeded successfully');
-        } else {
-            console.log('Default categories already exist, skipping seeding');
+            if (!existing) {
+                await Category.create(category);
+                console.log(`Added missing default category: ${category.name} (${category.type})`);
+            }
         }
+        
+        console.log('Default categories seeding completed');
     } catch (error) {
         console.error('Error seeding default categories:', error.message);
     }
