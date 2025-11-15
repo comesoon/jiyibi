@@ -1,12 +1,12 @@
 // v2: More robust fetch handling for SPA and opaque responses
-const CACHE_NAME = 'jiyibi-cache-v2';
+const CACHE_NAME = 'jiyibi-cache-v3';
 const URLS_TO_CACHE = [
     '/index.html',
     '/css/main.css',
     '/js/main.js',
     '/js/api.js',
     '/js/auth.js',
-    '/js/chart.js',
+    
     '/js/components.js',
     '/js/db.js',
     '/js/i18n.js',
@@ -19,7 +19,7 @@ const URLS_TO_CACHE = [
     '/locales/zh.json',
     '/icons/icon-192x192.svg',
     '/icons/icon-512x512.svg',
-    'https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js'
+    
 ];
 
 // Install: Caches app shell
